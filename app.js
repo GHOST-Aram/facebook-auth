@@ -18,9 +18,9 @@ app.get('/', function(req, res, next) {
 
 passport.use(new facebookStrategy(
 	{
-		clientID: '964874551287668',
-		clientSecret: '82284b3f67b98235e7b717a16299f757',
-		callbackURL: "https://3000/facebook/callback",
+		clientID: process.env.FACEBOOK_CLIENT_ID,
+		clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+		callbackURL: "http://localhost:3000/facebook/callback",
 		profileFields: [
 			'id', 
 			'displayName', 
@@ -44,8 +44,8 @@ app.use(session({
 		maxAge: 24 * 60 * 60 * 1000
 	}
 }))
-app.use(passport.session())
 app.use(passport.initialize())
+app.use(passport.session())
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -73,7 +73,7 @@ app.get('/profile', (req, res) => {
 	res.json({ message: "You are a valid user" })
 })
 
-app.get('failed', (req, res) =>{
+app.get('/failed', (req, res) =>{
 	res.json({ message: "Unauthorised user" })
 })
 // catch 404 and forward to error 	
