@@ -3,11 +3,49 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const passport = require('passport')
+const facebookStrategy = require('passport-facebook').Strategy
+const session = require('express-session');
+require('dotenv/config')
 
 var app = express();
+
+app.get('/', function(req, res, next) {
+	res.render('index', { title: 'Passport facebook auth' });
+  });
+
+//facebook strategy
+
+passport.use(new facebookStrategy(
+	{
+		clientID: '964874551287668',
+		clientSecret: '82284b3f67b98235e7b717a16299f757',
+		callbackURL: "https://3000/facebook/callback",
+		profileFields: [
+			'id', 
+			'displayName', 
+			'name', 
+			'gender',
+			'picture.type(large)',
+			'email'
+		]
+	},
+	(token, refreshToken, profile, done) => {
+		console.log(profile)
+		return done(null, profile)
+	}
+))
+
+app.use(session({ 
+	secret: process.env.SESSION_SECRET,
+	resave: true,
+	saveUninitialized: true,
+	cookie: {
+		maxAge: 24 * 60 * 60 * 1000
+	}
+}))
+app.use(passport.session())
+app.use(passport.initialize())
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -19,10 +57,26 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 
-// catch 404 and forward to error handler
+app.get('/auth/passport', 
+	passport.authenticate('facebook', { scope: 'email'})
+)
+
+app.get('/facebook/callback', 
+	passport.authenticate('facebook', {
+		successRedirect: '/profile',
+		failureRedirect: '/failed'
+	})
+)
+
+app.get('/profile', (req, res) => {
+	res.json({ message: "You are a valid user" })
+})
+
+app.get('failed', (req, res) =>{
+	res.json({ message: "Unauthorised user" })
+})
+// catch 404 and forward to error 	
 app.use(function(req, res, next) {
   next(createError(404));
 });
